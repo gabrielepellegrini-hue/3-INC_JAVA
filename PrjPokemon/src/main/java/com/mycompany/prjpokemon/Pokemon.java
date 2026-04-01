@@ -16,20 +16,18 @@ public class Pokemon {
     private int puntiVita;
     private String codicePokemon;
     private int nMosse;
-    private String[] mosse;
-    private ArrayInt puntiPartite;
-    private int[] danni;
+    private ArrayInt punteggio;
+    private Mossa[] mosse;
 
     public Pokemon(String nome, String tipo, int livello, int puntiVita) {
         this.nome = nome;
         this.tipo = tipo;
         this.livello = livello;
         this.puntiVita = puntiVita;
-        this.codicePokemon = generaCodice();
-        nMosse = 0;
-        mosse = new String[4];
-        this.puntiPartite = new ArrayInt(100);  //massimo di 100 partite  
-        this.danni = new int[mosse.length];
+        codicePokemon = generaCodice();
+        this.punteggio = new ArrayInt(10);
+        this.mosse = new Mossa[4]; // Inizializziamo l'array di oggetti
+        this.nMosse = 0;
 
     }
 
@@ -49,30 +47,32 @@ public class Pokemon {
         return puntiVita;
     }
 
+    public String getCodicePokemon() {
+        return codicePokemon;
+    }
+
     private String generaCodice() {
-        String txt;
-        txt = nome.substring(0, 2);
+        String txt = "";
+        txt += nome.substring(0, 2);
         txt += tipo.substring(tipo.length() - 2);
-        txt = txt.toUpperCase();
         txt += livello;
         return txt;
     }
 
     public String attacca(Pokemon p) {
-        String risultato = "hai perso";
-        if (p.livello < this.livello) {
-            risultato = "hai vinto";
+        String risultato = "Hai vinto";
+        if (p.livello > livello) {
+            risultato = "hai perso";
         } else if (p.livello == livello) {
             risultato = "pareggio";
         }
         return risultato;
     }
 
-    public boolean aggiungiMossa(String mossa, int danno) {
+    public boolean aggiungi(String mos, int dannoMossa) {
         boolean controllo = false;
         if (nMosse < mosse.length) {
-            mosse[nMosse] = mossa;
-            danni[nMosse] = danno;
+            mosse[nMosse] = new Mossa(mos, dannoMossa);   //creo un nuovo oggetto inserito nell'array Mossa caraterizzato da nome della mossa ed il suo danno
             nMosse++;
             controllo = true;
         }
@@ -81,68 +81,95 @@ public class Pokemon {
 
     public String stampaMosse() {
         String txt = "";
-        for (int i = 0; i < mosse.length; i++) {
-            txt += mosse[i] + " " + "danni: " + danni[i] +" ";
+        for (int i = 0; i < nMosse; i++) {
+            txt += "Mossa numero " + i + " , " + mosse[i].getMosse() + " Danno: " + mosse[i].getDanno() + "\n";
         }
         return txt;
     }
 
-    public boolean registraPartita(int punti) {
-        return puntiPartite.addElem(punti);
+    public boolean aggiungiPunti(int punt) {
+        return punteggio.addElem(punt);
     }
 
     public String stampaStorico() {
         String txt = "";
-        int numeroPartite = puntiPartite.size();
-        for (int i = 0; i < puntiPartite.size(); i++) {
-            txt += "Partita " + i + ": " + puntiPartite.getArr()[i] + " punti\n";
+        int[] arr = punteggio.getArr();
+        for (int i = 0; i < punteggio.size(); i++) {
+            txt += "Partita " + i + ": " + punteggio.getArr()[i] + " Punti\n";
         }
         return txt;
     }
 
     public int migliorPunteggio() {
-        return puntiPartite.max();
+        return punteggio.max();
     }
 
     public double mediaPunti() {
-        return puntiPartite.media();
+        return punteggio.media();
     }
 
-    public boolean haBattutoRecord(int punteggio) {
-        return puntiPartite.isMax(punteggio);
+    public boolean haBattutoRecord(int punti) {
+        return punteggio.isMax(punti);
     }
 
     public int partiteVinte() {
-        int vinte = 0;
-        for (int i = 0; i < puntiPartite.size(); i++) {
-            if (puntiPartite.get(i) > 50) {
-                vinte++;
+        int vinto = 0;
+        for (int i = 0; i < punteggio.size(); i++) {
+            if (punteggio.get(i) > 50) {
+                vinto++;
             }
         }
-        return vinte;
+        return vinto;
     }
-    
-    public int potenzaAtacco (int indiceMossa){
-        return livello + danni[indiceMossa];
+
+    public int potenzaAttacco(int indiceMossa) {
+        return mosse[indiceMossa].getDanno() + livello;
+    }
+
+    public int calcolaPuntiPartita(int potenza) {
+        return potenza * 2;
+    }
+
+    public void combatti(Pokemon avversario, int mossaMia, int mossaAvversario) {
+        //  Calcolo potenza (senza this)
+        int miaPotenza = potenzaAttacco(mossaMia);
+        int suaPotenza = avversario.potenzaAttacco(mossaAvversario);
+
+        //  Calcolo punti base (senza this)
+        int mieiPunti = calcolaPuntiPartita(miaPotenza);
+        int suoiPunti = avversario.calcolaPuntiPartita(suaPotenza);
+
+        // Bonus al vincitore
+        if (miaPotenza > suaPotenza) {
+            mieiPunti += 20;
+        }
+
+        if (suaPotenza > miaPotenza) {
+            suoiPunti += 20;
+        }
+
+        // ognuno dei due pokemo n registra i propi punti 
+        aggiungiPunti(mieiPunti);
+        avversario.aggiungiPunti(suoiPunti);
     }
 
     public String analisiPokemon() {
-        String txt;
-        txt = "Pokemon: " + nome + "\n";
-        txt += "Miglior puteggio: " + migliorPunteggio() + "\n";
-        txt += "Media punti: " + mediaPunti() + "\n";
-        txt += "PartiteVinte: " + partiteVinte() + "\n";
+        String txt = "";
+        txt += "Pokemon: " + nome + "\n";
+        txt += "Miglior Punteggio: " + migliorPunteggio() + "\n";
+        txt += "Media Punti: " + mediaPunti() + "\n";
+        txt += "Partite Vinte: " + partiteVinte() + "\n";
         return txt;
+
     }
 
     public String stampa() {
-        String txt;
-        txt = "nome: " + nome + "\n";
+        String txt = "";
+        txt += "nome: " + nome + "\n";
         txt += "tipo: " + tipo + "\n";
         txt += "livello: " + livello + "\n";
         txt += "puntiVita: " + puntiVita + "\n";
-        txt += "codicePokemon: " + codicePokemon + "\n";
+        txt += "codicePokemon: " + generaCodice().toUpperCase();
         return txt;
     }
-
 }
